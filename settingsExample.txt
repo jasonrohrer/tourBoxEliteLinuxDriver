@@ -1,0 +1,362 @@
+# lines that start with # are ignored as comments
+
+# comments can ONLY start at the beginning of a line
+
+# whitespace at the start of a line (spaces and tabs) are ignored
+   # so you can indent things
+   # however you want
+
+
+# Various numerical limits are described in this file 
+# (like the max number of 64 applications, etc).
+#
+# These can ALL be adjusted by tweaking the values at the
+# top of tourBoxEliteDriver.c and re-compiling it.
+#
+# Since the driver only uses static memory allocation (and not
+# dynamic heap allocation), its memory usage is fixed, and there are
+# no memory leaks possible over time.
+#
+# Thus, these numerical limits offer a trade-off in terms of RAM usage.
+# You can potentially make the driver much leaner RAM-wise if you
+# only want to map settings for a few applications instead of 64.
+
+
+
+# Settings for a new application start with a phrase in quotes
+# which is a pattern that occurs in the window for that application when
+# it is brought to the foreground.
+#
+# A line starting settings for a new applicaiton must start with "
+#
+# These application-matching string patterns can be at most 80 characters long.
+#
+# There can be at most 64 different applications defined in one settings file.
+#
+# Additional applications beyond the limit of 64 in one settings file
+# will produce an Warning message at runtime and will be ignored.
+
+# Here, we start a mapping section for Mozialla Firefox
+
+"Mozilla Firefox"
+
+
+
+# TourBox controls are as follows:
+#
+# TALL  SHORT  SIDE  TOP  UP  DOWN  LEFT  RIGHT  C1  C2  TOUR
+#
+# KNOB_TURN_CCW  KNOB_TURN_CW  KNOB_PRESS
+# DIAL_TURN_CCW  DIAL_TURN_CW  DIAL_PRESS
+# SCROLL_TURN_DOWN  SCROLL_TURN_UP  SCROLL_PRESS
+
+# CCW and CW are counter-clockwise and clockwise for knob and dial.
+# C1 and C2 are the little round buttons above Tall and Short.
+# Tour is the moon-shaped button southwest of the Knob.
+
+
+# TourBox inputs are either single inputs or 2-input combos.
+
+# Note that only button PRESSES can be used in the first step of a combo.
+# (Scroll, knob, and dial TURNS cannot be used as the first step.)
+# Thus, there are 14x20 = 280 possible combos
+
+
+# Command outputs are single keys, key combinations, or sequences of single keys
+# and key combinations.  Each output key is a KEY_ macro name.  The full list
+# of possible output key macros is in keyCodeList.txt
+#
+# Command outputs can also contain > and SLEEP_ triggers, which are described
+# below.
+
+
+
+
+
+
+# Single input mapping to single key.
+
+# When Top is pressed, output a left arrow key.
+
+TOP  KEY_UP
+
+
+
+
+# Single input mapping to a two-key combo.
+#
+# The combo will be issued simultaneously.
+#
+# Thus, the order that the combo is listed doesn't matter.
+
+# When Short is pressed, it will output the standard Undo key command.
+
+SHORT  KEY_LEFTCTRL KEY_Z
+
+
+
+
+# Single input mapping to a sequence of combos and single keys.
+#
+# > means send one key or combo before moving on to the next.
+
+# When C1 is pressed, access the Search History option from the History
+#   menu in Firefox, which has no direct key shortcut.
+# We Alt-S to open the menu, and then arrow down 3 times before pressing Enter.
+
+C1  KEY_LEFTALT KEY_S  >  KEY_DOWN  >  KEY_DOWN  >  KEY_DOWN  >  KEY_ENTER
+
+
+
+# Note that the above sequence might not work, if Firefox can't absorb
+#   the key events that fast.  This, sleeps might be needed (to wait
+#   for the menu to open before sending the DOWN keys).
+#
+# Use SLEEP_ with a number of milliseconds to insert a sleep in the sequence.
+#
+# The number can be at most 9 digits long (which is long enough to sleep
+#   for 11 days).
+
+# Map the Tour button to the same sequence from above, but with a 250 ms
+#   sleep to wait for the menu to open AFTER we send our S-key combo.
+
+TOUR  KEY_LEFTALT KEY_S  > SLEEP_250  KEY_DOWN  >  KEY_DOWN  >  KEY_DOWN  >  KEY_ENTER
+
+
+
+
+# A sequence printable keys can also be listed as a string,
+#   delimited by double quotes,
+#   which will be typed one-by-one.
+# Note that the string cannot contain a " character.
+
+# Have C2 open a new tab and go to www.google.com
+
+C2  KEY_LEFTCTRL KEY_T > "www.google.com" > KEY_ENTER
+
+
+
+# Have SIDE plus C2 type a phrase with quotes in it.
+
+SIDE C2  "She said, " > KEY_LEFTSHIFT KEY_APOSTROPHE > "Hello!" > KEY_LEFTSHIFT KEY_APOSTROPHE
+
+
+
+# have SIDE plus TOP type a phrase with special characters
+
+SIDE TOP "Hey you #$#@*&!"
+
+
+
+
+# NOTE
+#
+# Sequences of key outputs can be up to 64 commands long.
+# Commands can bey individual KEY_ codes, > symbols to send a combo,
+# SLEEP_ triggers,
+# or individual keys in a quoted printable ASCII key sequence.
+#
+# For example, the following sequence includes 4 commands:
+#   KEY_LEFTSHIFT KEY_UP > KEY_ENTER
+#
+# Sequences of commands longer than 64 will produce an error message
+# at runtime and will be ignored
+#
+# Quoted strings often require multiple KEY_ codes per letter
+# since there needs to be a send (>) after each letter, and also
+# SHIFT key codes for capital letters and special symbols.
+#
+# For example, the following sequence includes 14 commands:
+#   KEY_LEFTSHIFT KEY_UP > "hello" > KEY_ENTER
+#
+# As another example, the captial H takes it up to 15 commands (for shift):
+#   KEY_LEFTSHIFT KEY_UP > "Hello" > KEY_ENTER
+#
+# Also, separate from the limit of 64 commands in a sequence, there
+#   is also a limit of 10 sleeps in a sequence.
+
+
+
+
+# Combo input mapping to a key combination.
+
+# While holding down Side, if we press C1, we go back one page
+
+SIDE C1  KEY_LEFTALT KEY_LEFT
+
+
+
+
+# For Knob/Dial/Scroll, we can also change the haptic and rotation speed
+# settings, and this can be changed per direction and per combo.
+
+# For example, KNOB_TURN_CW can have one haptic and rotation speed setting
+# while the SIDE KNOB_TURN_CW combo can have a different haptic and rotation
+# speed setting.  I.e., by holding down SIDE while turning the Knob
+# we can not only output a different key sequence than when just turning the
+# Knob by itself, but we can also have a different haptic strength and
+# and different rotation speed.
+# Rotation speed is how fast repeat commands are issued when the widget
+# is turned farther in the same direction.
+# Fast rotation means 30 outputs per rotation.
+# Medium rotation means 15 outputs per rotation.
+# Slow rotation means means 10 outputs per rotation.
+# (These speeds are built-in to the TourBox hardware.)
+
+# rotational controls default to Strong haptics and Fast rotations
+# for rotational actions that have outputs assigned
+
+# if a rotational control has NO output assigned, haptics will be Off
+# thus, if you feel haptics for a control, it is outputting something
+
+# Haptics are controlled with the H0  H1  or H2  modifiers for
+# Off, Weak, or Strong haptics
+
+# Rotation speed is controlled with R0  R1  or R2  modifiers for
+# Slow, Medium, or Fast rotation
+
+
+
+# Knob with default Strong haptics and Fast rotation
+# set it to control zoom in/out in Firefox
+
+KNOB_TURN_CW   KEY_LEFTCTRL KEY_LEFTSHIFT KEY_EQUAL
+KNOB_TURN_CCW  KEY_LEFTCTRL KEY_MINUS
+
+
+
+# If we modify the Knob with a Side-button combo (Side held while Knob
+#   turned), we might want different Haptics and Rotation speed so that
+#   the modified knob feels different (so we have feedback that we have
+#   changed modes)
+
+# Have our modified Knob use Weak haptics and Slow rotation
+#   when modified with Side, the Knob switches tabs in Firefox
+
+SIDE KNOB_TURN_CW   H1 R0  KEY_LEFTCTRL KEY_TAB
+SIDE KNOB_TURN_CCW  H1 R0  KEY_LEFTCTRL KEY_LEFTSHIFT KEY_TAB
+
+
+
+# Both directions of a turn widget, for a given combo, will have the
+#   same haptics and rotation speed (you can't have it change when you
+#   spin it in a different direction).
+#
+# These can be unique per combo (SIDE plus KNOB, TOP plus KNOB, etc.)
+#   but not per direction (SIDE plus KNOB CW will have same settings
+#   as SIDE plus KNOB CCW).
+# If you set different parameters for the different directions,
+#   the last set in the mapping will be used for both directions.
+
+# Top plus Scroll pages up/down, and the second H and R settings hold.
+
+TOP SCROLL_TURN_UP    H0 R0  KEY_PAGEUP
+TOP SCROLL_TURN_DOWN  H1 R1  KEY_PAGEDOWN
+
+
+
+
+
+# Note that ANY button can be used to modify a Knob/Dial/Wheel and change
+#   its haptcs, rotation speed, and output, even pressing the Knob/Dial/Wheel
+#   itself (or pressing a Dial can modify a Knob).
+
+# Have the Knob behave differently when it is pressed and turned.
+# Use Weak haptics and Medium rotation speed.
+# Have Firefox jump from link to link in the page.
+
+KNOB_PRESS KNOB_TURN_CW   H1 R1  KEY_TAB
+KNOB_PRESS KNOB_TURN_CCW  H1 R1  KEY_LEFTSHIFT KEY_TAB
+
+
+
+# If there are multiple H or R modifiers, the last ones listed
+# will override the earlier ones with no Warning message.
+
+# have Scroll wheel scroll up and down the page with strong haptics
+# and fast rotation
+SCROLL_TURN_DOWN  H1 H0 R1 R0 R2 H2  KEY_DOWN
+SCROLL_TURN_UP    H2 R2              KEY_UP
+
+
+
+
+
+
+# Only TURN actions can have haptic strength and rotation speed assigned.
+#
+# If H or R modifiers are present for a non-TURN mapping, a Warning will
+#   be printed and those H or R modifiers will be ignored.
+
+# While holding down Side, press Tall to go forward one page
+
+SIDE TALL  H2 R1  KEY_LEFTALT KEY_RIGHT
+
+
+
+
+# some bad mappings that will be skipped with error messages
+
+# a TURN control leading a 2-button combo
+KNOB_TURN_CW TOP  KEY_LEFT
+
+# a 3-control combo
+SIDE TOP KNOB_TURN_CW  KEY_LEFT
+
+# a 4-control combo
+SIDE TOP SHORT KNOB_TURN_CW  KEY_LEFT
+
+# an invalid control 
+BLAH  KEY_LEFT
+
+# a missing TourBox control
+KEY_LEFTSHIFT KEY_LEFT
+
+# a mapping with an incomplete quoted string
+SHORT "bad test string
+
+# a mapping with a quoted string that is way too long
+SHORT TALL "a very very very very long test string that will not work"
+
+
+# a mapping with a quoted string that is so long that it overflows our quoted
+# string input buffer and gets cut off
+
+SHORT SIDE "a very very very very long test string that will not work a very very very very long test string that will not work a very very very very long test string that will not work"
+
+
+# a mapping with mal-formed SLEEP_ trigger
+SHORT SIDE KEY_LEFT > SLEEP_ KEY_LEFT
+
+# a mapping with too many digits in the SLEEP_ trigger
+SHORT SIDE KEY_LEFT > SLEEP_1234567890 KEY_LEFT
+
+# a mapping with too many SLEEP_ triggers
+SHORT SIDE KEY_A > SLEEP_500 KEY_A > SLEEP_500 KEY_A > SLEEP_500 KEY_A > SLEEP_500 KEY_A > SLEEP_500 KEY_A > SLEEP_500 KEY_A > SLEEP_500 KEY_A > SLEEP_500 KEY_A > SLEEP_500 KEY_A > SLEEP_500 KEY_A > SLEEP_500
+
+
+
+
+
+
+# Now we can start a new section for a different application.
+#
+# In this case, we switch to these settings whenever the window has "emacs:"
+#   in the title.
+
+# Note the first application with a string that matches is the one that is
+#   used.  Application order in the settings file matters.
+
+# This can be a problem if emacs has a file open called "Firefox.txt", for
+#   example (which is why the longer phrase "Mozilla Firefox" is used above).
+
+# emacs puts a : in the window title.  Use this to be as specific as possible.
+
+
+
+"emacs:"
+
+
+# have the Tall button save the current file in emacs
+
+TALL  KEY_LEFTCTRL KEY_X > KEY_LEFTCTRL KEY_S

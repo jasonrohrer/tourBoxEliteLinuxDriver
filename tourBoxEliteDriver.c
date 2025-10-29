@@ -9,7 +9,7 @@
 /* How many application mappings are supported?
    Each mapping is toggled when switching to a different application
      and has a different mapping section in the settings file.
-   If your settings file contains more mappings than this, the extra onces
+   If your settings file contains more mappings than this, the extra ones
      will be skipped with a warning message.
    Increasing this number increases the RAM used by the driver. */
 #define MAX_NUM_APPS  64

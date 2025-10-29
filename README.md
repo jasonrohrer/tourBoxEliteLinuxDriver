@@ -20,6 +20,8 @@ On Debian, you would install these dependencies as follows:
 
 `sudo apt install x11-util libusb-1.0-0-dev`
 
+I have tested this as far back as Ubuntu Trusty (2014), and as far forward as Debian Trixie (2025).
+
 ## Compiling
 The driver itself is a single file of C89 code, though it does include some POSIX stuff.  Compile it like so:
 

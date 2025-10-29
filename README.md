@@ -1,5 +1,5 @@
 # tourBoxEliteLinuxDriver
-A Linux userland driver for TourBox Elite with **haptics support** and **per-application mapping**
+A Linux userland USB driver for TourBox Elite with **haptics support** and **per-application mapping**
 
 TourBox is a neat little USB macro controller with various knobs and buttons of different shapes and sizes, which means you can tell what control you're manipulating without looking at it.
 
@@ -44,3 +44,10 @@ Keyboard commands sent through `/dev/uinput` are really fast.  Some applications
 This driver uses only static memory allocation at runtime, giving it a fixed memory footprint and no possible memory leaks over time.  There are various size definitions at the top of the C file, which you can adjust if you want to support more comprehensive functionality (like making mappings for more than 64 applications), or if you want to shrink the RAM footprint.  On my machine, the default size definitions give a virtual RAM footprint of about 15,872 KB, and if I shrink those sizes down in the C file, I can get to down to about 11,000 kB.  I'm guessing that the baseline virtual memory usage is coming from libusb.  The resident memory footprint is 1152 KB.
 
 This driver only supports 2-button/knob combos.  Holding Side while pressing Top can do something different than just pressing Top, but holding Side and Top while pressing Tall cannot have its own unique mapping (and if you press Side + Top + Tall, it will act just like Side + Top followed by Side + Tall, where the first button held down is the only one that's counted as being held down).  In principle, there's no reason why 3-control combos can't work, other than implementation complexity.  However, for the knob/dial/scroll, haptic differentiation only supports 2-control combos at the hardware level.
+
+### Comprehensive testing
+You can test this driver with your TourBox Elite with the `testSettings.txt` file.  Use emacs, or edit the file to match the window title from your text editor, and then run the following command:
+
+`sudo ./tourBoxEliteDriver testSettings.txt`
+
+Each control or combo that you press will type its name into your text editor.  In my case, in Emacs, if I spin the knob really fast, some of the text phrases seem to get interrupted when being typed.  Perhaps a SLEEP_ at the end of each phrase would help (though sleeping too much during fast knob inputs might cause USB input to pile up).

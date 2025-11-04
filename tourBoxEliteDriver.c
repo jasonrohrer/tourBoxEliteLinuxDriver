@@ -2211,7 +2211,7 @@ char makeMappingActive( ApplicationMapping *inMapping,
                     setupIndex = tourBoxSetupMap[t][p];
 
                     h = m->hapticStrength[t][p];
-                    r = m->hapticStrength[t][p];
+                    r = m->rotationSpeed[t][p];
                     switch( h ) {
                         case 0:
                             hByte = 0;

@@ -568,7 +568,13 @@ const char *keyCodeToString( int inKeyCode );
 #define SLEEP_TRIGGER  ( KEY_MAX + 1 )
 
 
-#define NUM_KEY_CODES 399
+#define NUM_KEY_CODES 401
+
+/* borrow these constants from uinput, to ensure that they don't overlap
+   with our other key codes */
+#define MOUSE_SCROLL_UP BTN_GEAR_UP
+#define MOUSE_SCROLL_DOWN BTN_GEAR_DOWN
+
 
 int keyCodes[NUM_KEY_CODES] = {
     KEY_ESC,
@@ -969,7 +975,9 @@ int keyCodes[NUM_KEY_CODES] = {
     KEY_ATTENDANT_OFF,
     KEY_ATTENDANT_TOGGLE,
     KEY_LIGHTS_TOGGLE,
-    KEY_ALS_TOGGLE };
+    KEY_ALS_TOGGLE,
+    MOUSE_SCROLL_UP,
+    MOUSE_SCROLL_DOWN };
 
 
 const char *keyCodeStrings[NUM_KEY_CODES] = {
@@ -1371,7 +1379,9 @@ const char *keyCodeStrings[NUM_KEY_CODES] = {
     "KEY_ATTENDANT_OFF",
     "KEY_ATTENDANT_TOGGLE",
     "KEY_LIGHTS_TOGGLE",
-    "KEY_ALS_TOGGLE" };
+    "KEY_ALS_TOGGLE",
+    "MOUSE_SCROLL_UP",
+    "MOUSE_SCROLL_DOWN" };
 
 
 /* use KEY_RESERVED to represent a SEND (send combo of keys) in our
@@ -2358,6 +2368,18 @@ void sendUinputSequence( int inHeldPressControlIndex,
             msSleep( sleepSequence[ nextSleepIndex ] );
             nextSleepIndex++;
             }
+        else if( sequence[i] == MOUSE_SCROLL_UP ) {
+            uinputEmit( inUinputFile, EV_REL, REL_WHEEL, 1 );
+            /* no need for release event, so don't add to sentPressComboBuffer */
+            
+            lastWasReport = 0;
+            }
+        else if( sequence[i] == MOUSE_SCROLL_DOWN ) {
+            uinputEmit( inUinputFile, EV_REL, REL_WHEEL, -1 );
+            /* no need for release event, so don't add to sentPressComboBuffer */
+            
+            lastWasReport = 0;
+            }
         else {
             uinputEmit( inUinputFile, EV_KEY, sequence[i], 1 );
             sentPressComboBuffer[ sentPressComboLength ] = sequence[i];
@@ -2584,8 +2606,21 @@ int main( int inNumArgs, const char **inArgs ) {
         close( uinputFile );
         return 1;
         }
-    
-    for( kI=0; kI<NUM_KEY_CODES; kI++ ) {
+
+    if( ioctl( uinputFile, UI_SET_EVBIT, EV_REL ) < 0 ) {
+        printf( "Error setting up relative events on /dev/uinput\n" );
+        close( uinputFile );
+        return 1;
+        }
+
+    if( ioctl( uinputFile, UI_SET_RELBIT, REL_WHEEL ) < 0 ) {
+        printf( "Error setting up scroll wheel events on /dev/uinput\n" );
+        close( uinputFile );
+        return 1;
+        }
+
+    /* skip last two, which are virtual key codes for mouse wheel */
+    for( kI=0; kI<NUM_KEY_CODES - 2; kI++ ) {
         if( ioctl( uinputFile, UI_SET_KEYBIT, keyCodes[ kI ] ) < 0 ) {
             printf( "Error enabling key code %s on /dev/uinput\n",
                     keyCodeToString( keyCodes[ kI ] ) );

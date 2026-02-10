@@ -2397,8 +2397,6 @@ void sendUinputSequence( int inHeldPressControlIndex,
 
                     /* HOLD at end of sequence, don't release now */
                     sentPressComboBufferHeld = 1;
-                    printf( "Holding sequence with %d keys\n",
-                        sentPressComboLength );
                     }
                 else {
                     for( p=0; p<sentPressComboLength; p++ ) {
@@ -2407,8 +2405,6 @@ void sendUinputSequence( int inHeldPressControlIndex,
                         }
                     /* report the end of the release combo */
                     uinputEmit( inUinputFile, EV_SYN, SYN_REPORT, 0 );
-                    printf( "Not holding sequence with %d keys\n",
-                            sentPressComboLength );
                     }
                 
                 /* clear the buffer */
@@ -2456,8 +2452,6 @@ void sendUinputSequence( int inHeldPressControlIndex,
 
                 /* HOLD at end of sequence, don't release now */
                 sentPressComboBufferHeld = 1;
-                printf( "Holding last sequence with %d keys\n",
-                        sentPressComboLength );
                 }
             else {
                 for( p=0; p<sentPressComboLength; p++ ) {
@@ -2466,8 +2460,6 @@ void sendUinputSequence( int inHeldPressControlIndex,
                     }
                 /* report the end of the release combo */
                 uinputEmit( inUinputFile, EV_SYN, SYN_REPORT, 0 );
-                printf( "Not holding final sequence with %d keys\n",
-                        sentPressComboLength );
                 
                 /* clear xcompile
 
@@ -2596,10 +2588,6 @@ void handleTourBoxInput( unsigned char inByte,
                     }
                 /* report the end of the release combo */
                 uinputEmit( inUinputFile, EV_SYN, SYN_REPORT, 0 );
-
-                
-                printf( "Delayed release of sequence with %d keys\n",
-                        sentPressComboLength );
 
                 sentPressComboBufferHeld = 0;
                 sentPressComboLength = 0;
@@ -3349,10 +3337,6 @@ int main( int inNumArgs, const char **inArgs ) {
                     m->holdLastKeyCombo
                         [ nextCodeIndexA ]
                         [ nextCodeIndexB ] = holdFound;
-
-                    if( holdFound ) {
-                        printf( "\nHold found on line %d\n\n", lineCount );
-                        }
                     }             
                 }
 

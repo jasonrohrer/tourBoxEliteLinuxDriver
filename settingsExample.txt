@@ -294,6 +294,24 @@ SIDE TALL  H2 R1  KEY_LEFTALT KEY_RIGHT
 
 
 
+# Key combos can also be held down as long as the tourbox control is held
+# down.  This is different from the usual behavior, where as soon as the
+# control is pressed, the full sequence is sent an all keys in the sequence
+# are released.  HOLD only affects the LAST key combo in the sequence,
+# and HOLD must be the last word on the line
+
+# While LEFT is held, hold down the ALT key
+
+LEFT  KEY_LEFTALT  HOLD
+
+# When pressing RIGHT, send combo to toggle grid and then hold down ALT as
+# long as RIGHT is held after that.
+
+RIGHT  KEY_LEFTCTRL KEY_G > KEY_LEFTALT  HOLD
+
+
+
+
 
 # some bad mappings that will be skipped with error messages
 

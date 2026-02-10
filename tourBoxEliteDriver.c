@@ -499,6 +499,13 @@ typedef struct ApplicationMapping {
         /* 0, 1, 2 for Slow, Medium, Fast rotation */
         int rotationSpeed[ NUM_TOURBOX_TURN_WIDGETS ]
                          [ NUM_TOURBOX_PRESS_CONTROLS + 1 ];
+
+        /* 0 for no-HOLD, 1 for HOLD
+           HOLD means we hold down the final key combination until our
+           tourbox control is released */
+        char holdLastKeyCombo[ NUM_TOURBOX_TURN_WIDGETS ]
+                             [ NUM_TOURBOX_PRESS_CONTROLS + 1 ];
+
         
     } ApplicationMapping;
 
@@ -1730,6 +1737,32 @@ char *getNextKeyCodeAndAdvance( char *inSourceString,
 
 
 
+/* checks for HOLD as next token, if found, advances past end of HOLD */
+static char *getNextHOLDAndAdvance( char *inSourceString,
+                                    char *outHoldFound ) {
+    char *nextSpot;
+    char token[32];
+    
+    nextSpot = getNextTokenAndAdvance( inSourceString,
+                                       token,
+                                       sizeof( token ) );
+
+    if( ! equal( token, "HOLD" ) ) {
+        
+        *outHoldFound = 0;
+        
+        /* rewind string position */
+        return inSourceString;
+        }
+
+    
+    *outHoldFound = 1;
+    
+    return nextSpot;
+    }
+
+
+
 
 char *getNextTokenAndAdvance( char *inSourceString,
                               char *inTokenBuffer,
@@ -2305,6 +2338,11 @@ void msSleep( int inNumMilliseconds );
    at end of combo, we need to send key releases */
 unsigned short sentPressComboBuffer[ MAX_KEY_SEQUENCE_STEPS ];
 
+int sentPressComboLength = 0;
+
+char sentPressComboBufferHeld = 0;
+
+
 
 void sendUinputSequence( int inHeldPressControlIndex,
                          int inControlIndex,
@@ -2315,8 +2353,10 @@ void sendUinputSequence( int inHeldPressControlIndex,
     int *sleepSequence;
     int i, p;
     int lastWasReport = 0;
-    int sentPressComboLength = 0;
     int nextSleepIndex = 0;
+
+    sentPressComboLength = 0;
+    sentPressComboBufferHeld = 0;
     
     if( inHeldPressControlIndex == -1 ) {
         /* extra last element in list is for bare control with nothing
@@ -2349,16 +2389,31 @@ void sendUinputSequence( int inHeldPressControlIndex,
 
             if( sentPressComboLength > 0 ) {
                 /* now send releases for everything in our combo */
-                for( p=0; p<sentPressComboLength; p++ ) {
-                    uinputEmit( inUinputFile, EV_KEY,
-                                sentPressComboBuffer[p], 0 );
+
+                if( i == sequenceLength -1
+                    &&
+                    inActiveMapping->holdLastKeyCombo
+                    [ inControlIndex ][ inHeldPressControlIndex ] ) {
+
+                    /* HOLD at end of sequence, don't release now */
+                    sentPressComboBufferHeld = 1;
+                    printf( "Holding sequence with %d keys\n",
+                        sentPressComboLength );
                     }
-                /* report the end of the release combo */
-                uinputEmit( inUinputFile, EV_SYN, SYN_REPORT, 0 );
+                else {
+                    for( p=0; p<sentPressComboLength; p++ ) {
+                        uinputEmit( inUinputFile, EV_KEY,
+                                    sentPressComboBuffer[p], 0 );
+                        }
+                    /* report the end of the release combo */
+                    uinputEmit( inUinputFile, EV_SYN, SYN_REPORT, 0 );
+                    printf( "Not holding sequence with %d keys\n",
+                            sentPressComboLength );
+                    }
+                
+                /* clear the buffer */
+                sentPressComboLength = 0;
                 }
-            
-            /* clear the buffer */
-            sentPressComboLength = 0;
             
             lastWasReport = 1;
             }
@@ -2395,15 +2450,33 @@ void sendUinputSequence( int inHeldPressControlIndex,
 
         if( sentPressComboLength > 0 ) {
             /* now send releases for everything in our combo */
-            for( p=0; p<sentPressComboLength; p++ ) {
-                uinputEmit( inUinputFile, EV_KEY, sentPressComboBuffer[p], 0 );
+
+            if( inActiveMapping->holdLastKeyCombo
+                [ inControlIndex ][ inHeldPressControlIndex ] ) {
+
+                /* HOLD at end of sequence, don't release now */
+                sentPressComboBufferHeld = 1;
+                printf( "Holding last sequence with %d keys\n",
+                        sentPressComboLength );
                 }
-            /* report the end of the release combo */
-            uinputEmit( inUinputFile, EV_SYN, SYN_REPORT, 0 );
+            else {
+                for( p=0; p<sentPressComboLength; p++ ) {
+                    uinputEmit( inUinputFile, EV_KEY,
+                                sentPressComboBuffer[p], 0 );
+                    }
+                /* report the end of the release combo */
+                uinputEmit( inUinputFile, EV_SYN, SYN_REPORT, 0 );
+                printf( "Not holding final sequence with %d keys\n",
+                        sentPressComboLength );
+                
+                /* clear xcompile
+
+                   the buffer */
+                sentPressComboLength = 0;
+                }
+            
             }
         
-        /* clear the buffer */
-        sentPressComboLength = 0;
         }
     }
 
@@ -2510,6 +2583,27 @@ void handleTourBoxInput( unsigned char inByte,
             }
         else if( actionCode == RELEASE ) {
             /* we never send events for releases */
+
+            /* UNLESS there's a previous combo still held down */
+
+            if( sentPressComboBufferHeld ) {
+                /* release what's held now */
+                int p;
+                
+                for( p=0; p<sentPressComboLength; p++ ) {
+                    uinputEmit( inUinputFile, EV_KEY,
+                                sentPressComboBuffer[p], 0 );
+                    }
+                /* report the end of the release combo */
+                uinputEmit( inUinputFile, EV_SYN, SYN_REPORT, 0 );
+
+                
+                printf( "Delayed release of sequence with %d keys\n",
+                        sentPressComboLength );
+
+                sentPressComboBufferHeld = 0;
+                sentPressComboLength = 0;
+                }
             
             if( heldPressControlIndex == pressIndex ) {
                 /* a release of what we have marked as held */
@@ -2751,9 +2845,10 @@ int main( int inNumArgs, const char **inArgs ) {
                 for( h=0; h<NUM_TOURBOX_TURN_WIDGETS; h++ ) {
                     for( k=0; k<NUM_TOURBOX_PRESS_CONTROLS + 1; k++ ) {
                         /* default for all unmapped controls
-                           rotation slow, haptics off */
+                           rotation slow, haptics off, no-HOLD */
                         m->hapticStrength[h][k] = 0;
                         m->rotationSpeed[h][k] = 0;
+                        m->holdLastKeyCombo[h][k] = 0;
                         }
                     }
                 
@@ -2778,6 +2873,7 @@ int main( int inNumArgs, const char **inArgs ) {
                 char rotationFound = 0;
                 int nextModifier = -1;
                 int nextSleepIndex = 0;
+                char holdFound = 0;
                 
                 if( numAppMappings == 0 ) {
                     printf( "\nWARNING:\n"
@@ -2933,6 +3029,17 @@ int main( int inNumArgs, const char **inArgs ) {
                 
                 while( gotKeyCode ) {
                     gotKeyCode = 0;
+
+                    /* always check for HOLD and bail out if found
+                       since it's always the last token on a line */
+
+                    nextParsePos =
+                        getNextHOLDAndAdvance( nextParsePos,
+                                               &holdFound );
+
+                    if( holdFound ) {
+                        break;
+                        }
                     
                     nextParsePos =
                         getNextKeyCodeAndAdvance( nextParsePos,
@@ -3237,6 +3344,14 @@ int main( int inNumArgs, const char **inArgs ) {
                             "for non-TURN control [%s], ignoring.\n\n",
                             lineCount,
                             controlIndexToString( nextCodeIndexA ) );
+                        }
+
+                    m->holdLastKeyCombo
+                        [ nextCodeIndexA ]
+                        [ nextCodeIndexB ] = holdFound;
+
+                    if( holdFound ) {
+                        printf( "\nHold found on line %d\n\n", lineCount );
                         }
                     }             
                 }
